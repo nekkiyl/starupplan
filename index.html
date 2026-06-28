@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StarUp — prototype</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css"/>
+<style>
+  :root{
+    --red:#FF5050; --red-deep:#D63333; --red-tint:#FFECEC;
+    --bg:#F4F2EF; --card:#FFFFFF; --ink:#1c1e21; --sec:#6f6e6a; --mut:#9b9a95; --bd:#ECEAE5;
+  }
+  *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+  body{margin:0;background:#E7E5E1;display:flex;flex-direction:column;align-items:center;padding:18px 12px 40px;min-height:100vh;}
+  /* view toggle */
+  .vt{display:flex;gap:6px;background:#fff;border:1px solid var(--bd);border-radius:30px;padding:4px;margin-bottom:18px;}
+  .vtb{border:none;background:none;border-radius:24px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--sec);cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .vtb.on{background:var(--red);color:#fff;}
+
+  /* frame */
+  .frame{background:var(--bg);overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.22);position:relative;}
+  #app.m .frame{width:390px;height:824px;border-radius:44px;border:10px solid #111;}
+  #app.d .frame{width:1000px;height:720px;border-radius:18px;border:1px solid #ccc;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:26px;background:#111;border-radius:0 0 16px 16px;z-index:30;}
+  #app.d .notch,#app.d .status{display:none;}
+  .status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;color:#000;}
+
+  .shell{display:flex;height:100%;}
+  #app.m .shell{height:calc(100% - 44px);}
+  #app.d .shell{height:100%;}
+  .pane{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+  .topbar{display:flex;align-items:center;gap:4px;padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--bd);}
+  .ic{width:40px;height:40px;border:1.5px solid #111;background:#fff;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#000;cursor:pointer;padding:0;}
+  .ic:hover{background:#111;color:#fff;}
+  .ic:hover svg{stroke:#fff;}
+  .ic:active{transform:scale(.95);}
+  .ic svg{display:block;}
+  .logo{flex:1;text-align:center;font-size:16px;font-weight:700;color:#000;}
+  .logo b{color:var(--red);}
+  #app.d .menuBtn{display:none;}
+
+  .body{flex:1;overflow-y:auto;padding:14px 18px 24px;}
+  #app.d .body{padding:20px 28px 28px;}
+  .scr{display:none;}
+  .scr.on{display:block;}
+  #app.d .inner{max-width:820px;}
+
+  .h{font-size:21px;font-weight:700;margin:2px 0 2px;color:var(--ink);}
+  .sub{font-size:12px;color:var(--mut);margin:0 0 16px;}
+
+  /* home hero */
+  .hero{background:linear-gradient(135deg,#FF5050,#D63333);border-radius:20px;padding:18px;color:#fff;margin-bottom:18px;}
+  .hero h2{margin:0 0 2px;font-size:20px;}
+  .hero p{margin:0 0 14px;font-size:12px;opacity:.9;}
+  .hstats{display:flex;gap:10px;}
+  .hstat{flex:1;background:rgba(255,255,255,.16);border-radius:12px;padding:10px;}
+  .hstat .v{font-size:18px;font-weight:700;}
+  .hstat .l{font-size:10px;opacity:.9;}
+
+  .mods{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  #app.d .mods{grid-template-columns:repeat(4,1fr);}
+  .mod{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px 16px;cursor:pointer;text-align:left;position:relative;}
+  .mod:hover{border-color:var(--red);}
+  .mod:active{transform:scale(.98);}
+  .mod .ci{width:46px;height:46px;border-radius:14px;background:var(--red-tint);color:var(--red-deep);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
+  .mod h3{margin:0 0 2px;font-size:15px;font-weight:700;color:var(--ink);}
+  .mod p{margin:0;font-size:11px;color:var(--sec);line-height:1.4;}
+  .mod .go{position:absolute;top:18px;right:16px;color:var(--mut);font-size:18px;}
+
+  .conn{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:11px 14px;font-size:13px;margin-bottom:8px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:#3B9C4D;}
+  .beta{display:flex;gap:8px;margin-bottom:16px;}
+  .beta span{flex:1;font-size:11px;color:var(--mut);background:var(--card);border:1px dashed var(--bd);border-radius:12px;padding:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .beta b{color:var(--red-deep);font-weight:700;}
+
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  #app.d .tiles{grid-template-columns:repeat(4,1fr);}
+  .tile{background:var(--card);border-radius:16px;padding:14px;border:1px solid var(--bd);}
+  .tile .l{font-size:12px;color:var(--sec);margin:0 0 4px;}
+  .tile .v{font-size:24px;font-weight:700;margin:0;color:var(--ink);}
+  .tile .v.up{color:var(--red);}
+  .lab{font-size:12px;color:var(--sec);margin:0 0 8px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:72px;margin:4px 0 20px;}
+  .bars .b{flex:1;background:var(--red);border-radius:3px 3px 0 0;opacity:.85;}
+  .chart{display:flex;align-items:flex-end;gap:4px;height:104px;}
+  .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;}
+  .col .cv{font-size:9px;color:var(--sec);font-weight:700;}
+  .col .bb{width:100%;background:var(--red);border-radius:3px 3px 0 0;opacity:.9;}
+  .col .cm{font-size:9px;color:var(--mut);}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;overflow:hidden;margin-bottom:14px;}
+  .cardp{padding:14px;}
+  .row{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--bd);font-size:14px;color:var(--ink);text-decoration:none;}
+  .row:last-child{border-bottom:none;}
+  .ext{color:var(--red);}
+  .pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;}
+  .pr{background:var(--red-tint);color:var(--red-deep);}
+  .pg{background:#EAF3DE;color:#3B6D11;}
+  .pn{background:#F1EFE8;color:var(--sec);}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:13px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;width:100%;}
+  .btn:active{transform:scale(.99);}
+  .btn.p{background:var(--red);color:#fff;border:none;}
+  .btn.sm{padding:9px 12px;font-size:13px;width:auto;}
+  .btn i{font-size:18px;}
+  input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:12px;font-size:14px;background:var(--card);color:var(--ink);}
+  input:focus{outline:none;border-color:var(--red);}
+  /* icon input */
+  .inp{position:relative;margin-bottom:10px;}
+  .inp > i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:17px;pointer-events:none;}
+  .inp input{padding-left:38px;}
+
+  .lock{border:2px solid var(--red);border-radius:16px;padding:16px;background:var(--card);margin-top:4px;}
+  .lock h4{margin:0 0 6px;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:6px;}
+  .lock p{margin:0 0 12px;font-size:12px;color:var(--sec);line-height:1.6;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+  .field{flex:1;}
+  .busy{font-size:13px;color:var(--sec);display:flex;align-items:center;gap:8px;margin-top:12px;}
+  .spin{animation:sp 1s linear infinite;display:inline-block;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .dz{border:2px dashed var(--red);border-radius:16px;padding:28px 14px;text-align:center;background:var(--card);margin-bottom:14px;}
+  .dz i{font-size:30px;color:var(--red);}
+  .chk{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--ink);margin-bottom:10px;line-height:1.5;}
+  .chk input{width:auto;margin:2px 0 0;}
+
+  /* brand match */
+  .bm{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px;}
+  .bm:last-child{border:none;}
+  .bm .bar{flex:1;height:8px;background:var(--bd);border-radius:6px;overflow:hidden;}
+  .bm .bar i{display:block;height:100%;background:var(--red);}
+
+  /* line items */
+  .li{display:flex;gap:6px;margin-bottom:8px;align-items:center;}
+  .li input{padding:10px;}
+  .li .d{flex:2;} .li .q{flex:.7;} .li .pr2{flex:1;} .li .t2{flex:1;}
+  .rm{width:30px;height:30px;flex:none;border:none;background:var(--red-tint);color:var(--red-deep);border-radius:9px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+  .totrow{display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding:10px 2px;border-top:1px solid var(--bd);margin-top:4px;}
+  .inv{border:1px solid var(--bd);border-radius:14px;padding:16px;background:#fff;font-size:13px;color:var(--ink);}
+  .inv table{width:100%;border-collapse:collapse;margin:10px 0;}
+  .inv th{text-align:left;font-size:11px;color:var(--sec);border-bottom:1px solid var(--bd);padding:6px 4px;}
+  .inv td{font-size:12px;padding:6px 4px;border-bottom:1px solid var(--bd);}
+
+  /* sidebar / drawer */
+  .overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:40;display:none;}
+  #app.m .overlay.on{display:block;}
+  .sidebar{background:var(--card);display:flex;flex-direction:column;}
+  #app.m .sidebar{position:absolute;top:0;right:0;width:74%;height:100%;z-index:50;transform:translateX(100%);transition:transform .25s ease;padding:54px 12px 22px;box-shadow:-8px 0 24px rgba(0,0,0,.15);}
+  #app.m .sidebar.on{transform:translateX(0);}
+  #app.d .sidebar{position:static;width:230px;border-right:1px solid var(--bd);padding:20px 12px;flex-shrink:0;}
+  .dprof{display:flex;align-items:center;gap:10px;padding:0 6px 14px;border-bottom:1px solid var(--bd);margin-bottom:8px;}
+  .av{width:42px;height:42px;border-radius:50%;background:var(--red-tint);color:var(--red-deep);display:flex;align-items:center;justify-content:center;font-weight:700;}
+  .dnav{display:flex;align-items:center;gap:12px;padding:11px 10px;border:none;background:none;font-size:14px;color:var(--ink);cursor:pointer;border-radius:10px;text-align:left;width:100%;}
+  .dnav:hover{background:var(--bg);}
+  .dnav.on{background:var(--red-tint);color:var(--red-deep);font-weight:600;}
+  .dnav i{font-size:19px;color:var(--sec);}
+  .dnav.on i{color:var(--red-deep);}
+  .ddiv{height:1px;background:var(--bd);margin:8px 6px;}
+
+  .plan{border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .plan.best{border:2px solid var(--red);}
+  .plan h4{margin:0 0 2px;font-size:15px;}
+  .plan .price{font-size:22px;font-weight:700;color:var(--ink);}
+  .plan .smt{font-size:12px;color:var(--sec);}
+
+  /* bottom tabs (mobile only) */
+  .tabbar{display:flex;border-top:1px solid var(--bd);background:var(--card);flex-shrink:0;padding-bottom:16px;}
+  #app.d .tabbar{display:none;}
+  .tab{flex:1;border:none;background:none;padding:9px 0 5px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--mut);cursor:pointer;}
+  .tab i{font-size:21px;}
+  .tab.on{color:var(--red);}
+</style>
+</head>
+<body>
+<div class="vt">
+  <button id="vm" class="vtb on" onclick="setView('m')"><i class="ti ti-device-mobile"></i> Mobile</button>
+  <button id="vd" class="vtb" onclick="setView('d')"><i class="ti ti-device-desktop"></i> Desktop</button>
+</div>
+
+<div id="app" class="m">
+ <div class="frame">
+  <div class="notch"></div>
+  <div class="status"><span>9:41</span><span><i class="ti ti-signal-4g"></i> <i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>
+
+  <div class="shell">
+   <!-- SIDEBAR / DRAWER -->
+   <aside class="sidebar" id="sidebar">
+     <div class="dprof"><span class="av">N</span><div><div style="font-weight:700;">Nana</div><div style="font-size:12px;color:var(--sec);">@nana_westiegirl</div></div></div>
+     <button class="dnav" data-s="home" onclick="go('home')"><i class="ti ti-home"></i> Home</button>
+     <button class="dnav" data-s="fans" onclick="go('fans')"><i class="ti ti-users"></i> Fans</button>
+     <button class="dnav" data-s="insights" onclick="go('insights')"><i class="ti ti-chart-bar"></i> Insights</button>
+     <button class="dnav" data-s="tools" onclick="go('tools')"><i class="ti ti-tools"></i> Tools</button>
+     <button class="dnav" data-s="upload" onclick="go('upload')"><i class="ti ti-cloud-upload"></i> Upload zip</button>
+     <div class="ddiv"></div>
+     <button class="dnav" data-s="account" onclick="go('account')"><i class="ti ti-user"></i> Account</button>
+     <button class="dnav" data-s="payment" onclick="go('payment')"><i class="ti ti-credit-card"></i> Payment</button>
+     <button class="dnav" data-s="settings" onclick="go('settings')"><i class="ti ti-settings"></i> Settings</button>
+     <button class="dnav" style="margin-top:auto;color:var(--red-deep);"><i class="ti ti-logout" style="color:var(--red-deep);"></i> Log out</button>
+   </aside>
+
+   <div class="pane">
+    <div class="topbar">
+      <button id="backBtn" class="ic" onclick="back()" aria-label="Back" title="Back" style="display:none;"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <span class="logo"><b>星升</b> StarUp</span>
+      <button class="ic menuBtn" onclick="openMenu()" aria-label="Menu" title="Account & settings"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+    </div>
+
+    <div class="body"><div class="inner">
+     <!-- HOME -->
+     <div class="scr on" id="home">
+       <div class="hero">
+         <h2>Hi, Nana</h2>
+         <p>Your one-person company, handled.</p>
+         <div class="hstats">
+           <div class="hstat"><div class="v">409</div><div class="l">Fans</div></div>
+           <div class="hstat"><div class="v">+10</div><div class="l">This month</div></div>
+           <div class="hstat"><div class="v">24 Jun</div><div class="l">Last sync</div></div>
+         </div>
+       </div>
+       <p class="lab"><i class="ti ti-grid-dots"></i> Explore</p>
+       <div class="mods">
+         <button class="mod" onclick="go('fans')"><i class="ti ti-chevron-right go"></i><div class="ci"><i class="ti ti-users"></i></div><h3>Fans</h3><p>Fan base & post study</p></button>
+         <button class="mod" onclick="go('insights')"><i class="ti ti-chevron-right go"></i><div class="ci"><i class="ti ti-chart-bar"></i></div><h3>Insights</h3><p>Growth & engagement</p></button>
+         <button class="mod" onclick="go('tools')"><i class="ti ti-chevron-right go"></i><div class="ci"><i class="ti ti-tools"></i></div><h3>Tools</h3><p>Deals & invoices</p></button>
+         <button class="mod" onclick="go('upload')"><i class="ti ti-chevron-right go"></i><div class="ci"><i class="ti ti-cloud-upload"></i></div><h3>Upload zip</h3><p>Import export file</p></button>
+       </div>
+     </div>
+
+     <!-- FANS -->
+     <div class="scr" id="fans">
+       <p class="h">Fan base</p>
+       <div class="conn"><span class="dot"></span> Instagram connected · @nana_westiegirl</div>
+       <div class="beta"><span><i class="ti ti-brand-tiktok"></i> TikTok <b>Beta</b></span><span><i class="ti ti-book"></i> XHS <b>Soon</b></span></div>
+       <p class="lab"><i class="ti ti-search"></i> Search · 409 unique fans</p>
+       <div class="inp"><i class="ti ti-search"></i><input type="text" placeholder="Search fans"/></div>
+       <div class="card">
+         <a class="row" href="https://www.instagram.com/the_duggie"><span style="flex:1;">@the_duggie</span><span style="color:var(--mut);font-size:12px;">23 Jun</span><i class="ti ti-external-link ext"></i></a>
+         <a class="row" href="https://www.instagram.com/chooee.westie"><span style="flex:1;">@chooee.westie</span><span class="pill pr">commenter</span><i class="ti ti-external-link ext"></i></a>
+         <a class="row" href="https://www.instagram.com/domi_westiee"><span style="flex:1;">@domi_westiee</span><span style="color:var(--mut);font-size:12px;">22 Jun</span><i class="ti ti-external-link ext"></i></a>
+         <a class="row" href="https://www.instagram.com/winniethewestie1"><span style="flex:1;">@winniethewestie1</span><span style="color:var(--mut);font-size:12px;">15 Jun</span><i class="ti ti-external-link ext"></i></a>
+       </div>
+       <p class="lab" style="justify-content:space-between;"><span><i class="ti ti-chart-dots"></i> Study up to 3 posts/reels</span><button class="btn sm" onclick="resetStudy()"><i class="ti ti-refresh"></i> New study</button></p>
+       <div class="card cardp">
+         <div id="slot0"><div class="li"><div class="inp" style="flex:2;margin:0;"><i class="ti ti-link"></i><input id="plink0" placeholder="Paste post/reel link"/></div><button class="btn p sm" onclick="analyze(0)">Analyze</button></div></div>
+         <div id="slot1" style="display:none;margin-top:8px;"><div class="li"><div class="inp" style="flex:2;margin:0;"><i class="ti ti-link"></i><input id="plink1" placeholder="Paste 2nd link"/></div><button class="btn p sm" onclick="analyze(1)">Analyze</button></div></div>
+         <div id="slot2" style="display:none;margin-top:8px;"><div class="li"><div class="inp" style="flex:2;margin:0;"><i class="ti ti-link"></i><input id="plink2" placeholder="Paste 3rd link"/></div><button class="btn p sm" onclick="analyze(2)">Analyze</button></div></div>
+         <button id="addLink" class="btn sm" style="display:none;width:100%;margin-top:8px;" onclick="addLink()"><i class="ti ti-plus"></i> Add another post</button>
+         <div id="presults" style="margin-top:10px;"></div>
+         <div id="pagg"></div>
+       </div>
+     </div>
+
+     <!-- INSIGHTS -->
+     <div class="scr" id="insights">
+       <p class="h">Insights</p>
+       <div class="conn"><span class="dot"></span> Instagram connected · monthly · refresh depends on import</div>
+       <div class="beta"><span><i class="ti ti-brand-tiktok"></i> TikTok <b>Beta</b></span><span><i class="ti ti-book"></i> XHS <b>Soon</b></span></div>
+       <div class="tiles">
+         <div class="tile"><p class="l">Followers</p><p class="v">409</p></div>
+         <div class="tile"><p class="l">New this month</p><p class="v up">+10</p></div>
+         <div class="tile"><p class="l">Following</p><p class="v">1,384</p></div>
+         <div class="tile"><p class="l">Unfollows</p><p class="v">0</p></div>
+       </div>
+       <div class="card cardp" style="margin-bottom:16px;">
+         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+           <span class="lab" style="margin:0;"><i class="ti ti-trending-up"></i> New followers per month</span>
+           <span style="font-size:11px;color:var(--mut);">avg 33/mo</span>
+         </div>
+         <div class="chart">
+           <div class="col"><span class="cv">8</span><div class="bb" style="height:15px;"></div><span class="cm">J25</span></div>
+           <div class="col"><span class="cv">41</span><div class="bb" style="height:76px;"></div><span class="cm">J</span></div>
+           <div class="col"><span class="cv">34</span><div class="bb" style="height:63px;"></div><span class="cm">A</span></div>
+           <div class="col"><span class="cv">36</span><div class="bb" style="height:67px;"></div><span class="cm">S</span></div>
+           <div class="col"><span class="cv">38</span><div class="bb" style="height:71px;"></div><span class="cm">O</span></div>
+           <div class="col"><span class="cv">36</span><div class="bb" style="height:67px;"></div><span class="cm">N</span></div>
+           <div class="col"><span class="cv">40</span><div class="bb" style="height:74px;"></div><span class="cm">D</span></div>
+           <div class="col"><span class="cv">31</span><div class="bb" style="height:58px;"></div><span class="cm">J26</span></div>
+           <div class="col"><span class="cv">31</span><div class="bb" style="height:58px;"></div><span class="cm">F</span></div>
+           <div class="col"><span class="cv">42</span><div class="bb" style="height:78px;"></div><span class="cm">M</span></div>
+           <div class="col"><span class="cv">43</span><div class="bb" style="height:80px;"></div><span class="cm">A</span></div>
+           <div class="col"><span class="cv">19</span><div class="bb" style="height:35px;"></div><span class="cm">M</span></div>
+           <div class="col"><span class="cv">10</span><div class="bb" style="height:19px;"></div><span class="cm">J</span></div>
+         </div>
+       </div>
+       <div class="tiles" style="grid-template-columns:1fr 1fr;">
+         <div class="tile"><p class="l">Engaged fans</p><p class="v">4</p></div>
+         <div class="tile"><p class="l">Comments captured</p><p class="v">31</p></div>
+       </div>
+       <p class="lab"><i class="ti ti-users-group"></i> Fan archetypes</p>
+       <div class="chips"><span class="pill pg">Superfans 4</span><span class="pill pr">Community 122</span><span class="pill pn">Lurkers 283</span></div>
+       <div class="lock">
+         <h4><i class="ti ti-lock" style="color:var(--red);"></i> Unlock with a Creator account</h4>
+         <p>Reach, saves & shares per post · audience age, gender & top cities · best time to post.</p>
+         <button class="btn p"><i class="ti ti-plug-connected"></i> Connect Creator account</button>
+       </div>
+     </div>
+
+     <!-- TOOLS -->
+     <div class="scr" id="tools">
+       <p class="h">Tools</p>
+       <p class="sub">Create what you need to win and bill deals</p>
+       <button class="mod" style="width:100%;margin-bottom:12px;" onclick="go('deal')"><i class="ti ti-chevron-right go"></i><div class="ci"><i class="ti ti-file-text"></i></div><h3>Deal</h3><p>Templated pitch deck with AI brand targeting</p></button>
+       <button class="mod" style="width:100%;" onclick="go('invoice')"><i class="ti ti-chevron-right go"></i><div class="ci"><i class="ti ti-receipt"></i></div><h3>Invoice</h3><p>Itemized invoice, preview, send via email or WhatsApp</p></button>
+     </div>
+
+     <!-- DEAL -->
+     <div class="scr" id="deal">
+       <p class="h">Deal</p>
+       <p class="sub">Templated deck · top posts (last 90 days)</p>
+       <p class="lab"><i class="ti ti-target"></i> AI-suggested brand targeting</p>
+       <div class="card cardp">
+         <div class="bm"><span style="width:120px;">Pet food & treats</span><span class="bar"><i style="width:92%;"></i></span><b style="color:var(--red-deep);">92%</b></div>
+         <div class="bm"><span style="width:120px;">Grooming & pet care</span><span class="bar"><i style="width:85%;"></i></span><b style="color:var(--red-deep);">85%</b></div>
+         <div class="bm"><span style="width:120px;">Dog accessories</span><span class="bar"><i style="width:78%;"></i></span><b style="color:var(--red-deep);">78%</b></div>
+       </div>
+       <div id="dealStart"><button class="btn p" onclick="buildDeck()"><i class="ti ti-sparkles"></i> Generate pitch deck</button></div>
+       <div id="dealBusy" class="busy" style="display:none;"><i class="ti ti-loader-2 spin"></i> Generating on our backend…</div>
+       <div id="dealDone" style="display:none;margin-top:12px;">
+         <div class="card cardp">
+           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:15px;font-weight:700;">nana_westiegirl — media kit</span><span class="pill pr" id="deckVer">Version 1</span></div>
+           <p style="margin:0 0 12px;font-size:12px;color:var(--sec);line-height:1.6;">USP: KL-based westie creator with a highly engaged dog-owner community and strong pet-brand fit.</p>
+           <p class="lab"><i class="ti ti-flame"></i> Top posts (last 90 days)</p>
+           <div style="font-size:12px;color:var(--sec);line-height:1.9;">Reel "Paw-rathon" · 4,210 reach<br/>Reel "Beach run" · 3,540 reach<br/>Post "Vet day" · 1,980 reach</div>
+           <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn sm"><i class="ti ti-download"></i> PDF</button><button class="btn sm"><i class="ti ti-download"></i> PPTX</button></div>
+           <p class="lab" style="margin-top:14px;"><i class="ti ti-send"></i> Send to brand</p>
+           <div style="display:flex;gap:8px;"><button class="btn"><i class="ti ti-mail"></i> Email</button><button class="btn"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button></div>
+         </div>
+         <button class="btn p" onclick="buildDeck()"><i class="ti ti-refresh"></i> Generate another deal</button>
+         <div id="deckHist"></div>
+       </div>
+     </div>
+
+     <!-- INVOICE -->
+     <div class="scr" id="invoice">
+       <p class="h">Invoice</p>
+       <p class="sub" id="invNo">#INV-0007</p>
+       <div id="invEdit">
+         <div class="inp"><i class="ti ti-building-store"></i><input type="text" id="invBrand" value="Barkffy Pet Grooming" placeholder="Bill to (brand)"/></div>
+         <p class="lab"><i class="ti ti-list-details"></i> Line items</p>
+         <div class="li" style="font-size:10px;color:var(--mut);"><span class="d">Description</span><span class="q">Qty</span><span class="pr2">Unit</span><span class="t2">Total</span><span style="width:30px;"></span></div>
+         <div id="lines"></div>
+         <button class="btn sm" style="width:100%;margin:4px 0 6px;" onclick="addItem()"><i class="ti ti-plus"></i> Add item</button>
+         <div class="totrow"><span>Total (RM)</span><span id="grand">0</span></div>
+         <button class="btn p" style="margin-top:10px;" onclick="preview()"><i class="ti ti-eye"></i> Preview invoice</button>
+       </div>
+       <div id="invPrev" style="display:none;">
+         <div class="inv">
+           <div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><b style="font-size:15px;">Invoice</b><br/><span style="color:var(--sec);" id="pvNo">#INV-0007 · 28 Jun 2026</span></div><span class="logo" style="flex:none;"><b>星升</b></span></div>
+           <p style="margin:10px 0 0;color:var(--sec);">Bill to</p>
+           <p id="pvBrand" style="margin:2px 0 0;font-weight:600;">Barkffy Pet Grooming</p>
+           <table><thead><tr><th>Item</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Unit</th><th style="text-align:right;">Total</th></tr></thead><tbody id="pvBody"></tbody></table>
+           <div style="text-align:right;font-weight:700;font-size:15px;">Total: RM <span id="pvTotal">0</span></div>
+         </div>
+         <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn" onclick="editInv()"><i class="ti ti-arrow-left"></i> Edit</button><button class="btn p" onclick="genPdf()"><i class="ti ti-file-download"></i> Generate PDF</button></div>
+       </div>
+       <div id="invSent" style="display:none;margin-top:14px;">
+         <div class="card cardp" style="text-align:center;">
+           <i class="ti ti-circle-check" style="font-size:34px;color:#3B9C4D;"></i>
+           <p style="margin:6px 0 12px;font-weight:600;" id="sentName">PDF generated · INV-0007.pdf</p>
+           <div style="display:flex;gap:8px;"><button class="btn"><i class="ti ti-mail"></i> Email</button><button class="btn"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button></div>
+           <button class="btn p" style="margin-top:10px;" onclick="newInvoice()"><i class="ti ti-plus"></i> Create another invoice</button>
+         </div>
+       </div>
+       <div id="invStore"></div>
+     </div>
+
+     <!-- UPLOAD -->
+     <div class="scr" id="upload">
+       <p class="h">Upload export zip</p>
+       <p class="sub">Drag your Instagram export. We keep fans & comments, delete the rest.</p>
+       <div class="dz"><i class="ti ti-cloud-upload"></i><p style="margin:8px 0 2px;font-weight:600;">Drop your export .zip</p><p style="margin:0;font-size:11px;color:var(--mut);">up to 300 MB</p></div>
+       <label class="chk"><input type="checkbox"/> I agree to the Terms & Privacy Policy.</label>
+       <label class="chk"><input type="checkbox"/> Under PDPA 2010 (amended 2024), I consent to processing my fans' data and confirm I may upload it.</label>
+       <label class="chk"><input type="checkbox"/> I understand my private messages and media are deleted on upload.</label>
+       <button class="btn p" style="margin-top:6px;" onclick="uploadZip()"><i class="ti ti-upload"></i> Upload and continue</button>
+       <div id="importHist"></div>
+     </div>
+
+     <!-- ACCOUNT -->
+     <div class="scr" id="account">
+       <p class="h">Account</p>
+       <p class="sub">Your social media links</p>
+       <p class="lab"><i class="ti ti-brand-instagram"></i> Instagram</p>
+       <div class="inp"><i class="ti ti-brand-instagram"></i><input type="text" value="instagram.com/nana_westiegirl"/></div>
+       <p class="lab"><i class="ti ti-brand-tiktok"></i> TikTok</p>
+       <div class="inp"><i class="ti ti-brand-tiktok"></i><input type="text" placeholder="Add your TikTok link"/></div>
+       <p class="lab"><i class="ti ti-book"></i> Xiaohongshu (XHS)</p>
+       <div class="inp"><i class="ti ti-link"></i><input type="text" placeholder="Add your XHS link"/></div>
+       <button class="btn p" style="margin-top:6px;">Save links</button>
+     </div>
+
+     <!-- PAYMENT -->
+     <div class="scr" id="payment">
+       <p class="h">Payment</p>
+       <p class="sub">Current plan: Free trial · 18 days left</p>
+       <div class="plan"><h4>Monthly</h4><div class="price">RM 99<span class="smt"> / month</span></div><p class="smt">Pay as you go, cancel anytime.</p><button class="btn p" style="margin-top:8px;"><i class="ti ti-bolt"></i> Pay monthly now</button></div>
+       <div class="plan best"><h4>Yearly <span class="pill pr">save 17%</span></h4><div class="price">RM 990<span class="smt"> / year</span></div><p class="smt">Billed yearly — two months free.</p><button class="btn p" style="margin-top:8px;"><i class="ti ti-calendar-check"></i> Subscribe yearly</button></div>
+     </div>
+
+     <!-- SETTINGS -->
+     <div class="scr" id="settings">
+       <p class="h">Settings</p>
+       <p class="sub">Manage your login details</p>
+       <p class="lab"><i class="ti ti-mail"></i> Email address</p>
+       <div class="inp"><i class="ti ti-mail"></i><input type="email" value="nana@example.com"/></div>
+       <p class="lab"><i class="ti ti-user"></i> Username</p>
+       <div class="inp"><i class="ti ti-user"></i><input type="text" value="nana_westiegirl"/></div>
+       <p class="lab"><i class="ti ti-lock"></i> Change password</p>
+       <div class="inp"><i class="ti ti-lock"></i><input type="password" placeholder="Current password"/></div>
+       <div class="inp"><i class="ti ti-lock-plus"></i><input type="password" placeholder="New password"/></div>
+       <button class="btn p" style="margin-top:6px;">Save changes</button>
+     </div>
+    </div></div>
+
+    <div class="tabbar">
+      <button class="tab on" data-s="home" onclick="go('home')"><i class="ti ti-home"></i> Home</button>
+      <button class="tab" data-s="fans" onclick="go('fans')"><i class="ti ti-users"></i> Fans</button>
+      <button class="tab" data-s="insights" onclick="go('insights')"><i class="ti ti-chart-bar"></i> Insights</button>
+      <button class="tab" data-s="tools" onclick="go('tools')"><i class="ti ti-tools"></i> Tools</button>
+      <button class="tab" data-s="upload" onclick="go('upload')"><i class="ti ti-cloud-upload"></i> Upload</button>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script>
+  var hist=['home'];
+  var TABMAP={deal:'tools',invoice:'tools'};
+  function akey(s){return TABMAP[s]||s;}
+  function render(s){
+    document.querySelectorAll('.scr').forEach(c=>c.classList.toggle('on',c.id===s));
+    document.getElementById('backBtn').style.display=hist.length>1?'flex':'none';
+    var k=akey(s);
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.s===k));
+    document.querySelectorAll('.dnav').forEach(t=>t.classList.toggle('on',t.dataset.s===k));
+    var b=document.querySelector('.body'); if(b) b.scrollTop=0;
+  }
+  function go(s){ if(hist[hist.length-1]!==s) hist.push(s); render(s); closeMenu(); }
+  function back(){ if(hist.length>1){ hist.pop(); render(hist[hist.length-1]); } }
+  function home(){ hist=['home']; render('home'); }
+  function openMenu(){ document.getElementById('sidebar').classList.add('on'); toggleOv(true); }
+  function closeMenu(){ document.getElementById('sidebar').classList.remove('on'); toggleOv(false); }
+  function toggleOv(on){ var o=document.getElementById('ov'); if(!o){ o=document.createElement('div'); o.id='ov'; o.className='overlay'; o.onclick=closeMenu; document.querySelector('.frame').appendChild(o);} o.classList.toggle('on',on); }
+  function setView(v){ document.getElementById('app').className=v; document.getElementById('vm').classList.toggle('on',v==='m'); document.getElementById('vd').classList.toggle('on',v==='d'); closeMenu(); }
+
+  /* post analyzer */
+  var POSTS=[{t:'Reel · Paw-rathon',likes:388,comments:24},{t:'Post · Vet day',likes:174,comments:9},{t:'Reel · Beach run',likes:455,comments:28}];
+  var done=[false,false,false], visible=1;
+  function addLink(){ if(visible<3){ document.getElementById('slot'+visible).style.display='block'; visible++; document.getElementById('addLink').style.display=visible<3?'flex':'none'; } }
+  function analyze(i){
+    done[i]=true; var r=document.getElementById('presults'); r.innerHTML=''; var tl=0,tc=0,n=0;
+    for(var k=0;k<3;k++){ if(done[k]){ n++; tl+=POSTS[k].likes; tc+=POSTS[k].comments;
+      r.innerHTML+='<div class="card cardp" style="margin-bottom:8px;"><div style="font-size:13px;font-weight:600;">'+POSTS[k].t+'</div><div style="display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--sec);"><span><i class="ti ti-heart" style="color:var(--red);"></i> <b style="color:var(--red-deep);">'+POSTS[k].likes+'</b> likes</span><span><i class="ti ti-message-circle"></i> <b style="color:var(--red-deep);">'+POSTS[k].comments+'</b> comments</span></div></div>'; } }
+    document.getElementById('pagg').innerHTML = n>1 ? '<div class="totrow"><span>'+n+' posts · totals</span><span>'+tl+' likes · '+tc+' comments</span></div>' : '';
+    if(visible<3) document.getElementById('addLink').style.display='flex';
+  }
+  function resetStudy(){
+    done=[false,false,false]; visible=1;
+    document.getElementById('slot1').style.display='none';
+    document.getElementById('slot2').style.display='none';
+    document.getElementById('plink0').value=''; document.getElementById('plink1').value=''; document.getElementById('plink2').value='';
+    document.getElementById('presults').innerHTML=''; document.getElementById('pagg').innerHTML='';
+    document.getElementById('addLink').style.display='none';
+  }
+
+  /* deck */
+  var deckN=0, decks=[];
+  function buildDeck(){
+    document.getElementById('dealStart').style.display='none';
+    document.getElementById('dealDone').style.display='none';
+    document.getElementById('dealBusy').style.display='flex';
+    setTimeout(function(){
+      document.getElementById('dealBusy').style.display='none';
+      deckN++; decks.push({n:deckN,d:'28 Jun 2026'});
+      document.getElementById('deckVer').textContent='Version '+deckN;
+      renderDeckHist();
+      document.getElementById('dealDone').style.display='block';
+    },1500);
+  }
+  function renderDeckHist(){
+    if(decks.length<2){ document.getElementById('deckHist').innerHTML=''; return; }
+    var h='<p class="lab" style="margin-top:16px;"><i class="ti ti-history"></i> Previous versions</p><div class="card">';
+    decks.forEach(function(d){ h+='<div class="row"><i class="ti ti-file-text" style="color:var(--red);"></i><span style="flex:1;">Version '+d.n+' · '+d.d+'</span><button class="btn sm" onclick="previewDeal('+d.n+')"><i class="ti ti-eye"></i> Preview</button></div>'; });
+    document.getElementById('deckHist').innerHTML=h+'</div>';
+  }
+  function previewDeal(n){ document.getElementById('deckVer').textContent='Version '+n; document.querySelector('.body').scrollTop=0; }
+
+  /* invoice */
+  var invNum=7, items=[], stored=[];
+  function defItems(){ return [{d:'Sponsored reel',q:1,p:800},{d:'Instagram stories x2',q:2,p:150}]; }
+  function pad(n){ return ('000'+n).slice(-4); }
+  function drawLines(){
+    var c=document.getElementById('lines'); c.innerHTML=''; var g=0;
+    items.forEach(function(it,i){ var t=Math.round(it.q*it.p); g+=t;
+      c.innerHTML+='<div class="li"><span class="inp d" style="margin:0;"><i class="ti ti-tag"></i><input value="'+it.d+'" oninput="upd('+i+',\'d\',this.value)"/></span><input class="q" type="number" value="'+it.q+'" oninput="upd('+i+',\'q\',this.value)"/><input class="pr2" type="number" value="'+it.p+'" oninput="upd('+i+',\'p\',this.value)"/><input class="t2" value="'+t+'" readonly/><button class="rm" onclick="removeItem('+i+')"><i class="ti ti-x"></i></button></div>'; });
+    document.getElementById('grand').textContent=g;
+  }
+  function upd(i,k,v){ items[i][k]=(k==='d')?v:(+v||0); drawLines(); }
+  function addItem(){ items.push({d:'New item',q:1,p:0}); drawLines(); }
+  function removeItem(i){ items.splice(i,1); drawLines(); }
+  function preview(){
+    var g=0,b=document.getElementById('pvBody'); b.innerHTML='';
+    items.forEach(function(it){ var t=Math.round(it.q*it.p); g+=t; b.innerHTML+='<tr><td>'+it.d+'</td><td style="text-align:right;">'+it.q+'</td><td style="text-align:right;">'+it.p+'</td><td style="text-align:right;">'+t+'</td></tr>'; });
+    document.getElementById('pvBrand').textContent=document.getElementById('invBrand').value;
+    document.getElementById('pvNo').textContent='#INV-'+pad(invNum)+' · 28 Jun 2026';
+    document.getElementById('pvTotal').textContent=g;
+    document.getElementById('invEdit').style.display='none'; document.getElementById('invSent').style.display='none'; document.getElementById('invPrev').style.display='block';
+  }
+  function editInv(){ document.getElementById('invPrev').style.display='none'; document.getElementById('invEdit').style.display='block'; }
+  function genPdf(){
+    var g=0; items.forEach(function(it){g+=Math.round(it.q*it.p);});
+    stored.push({no:pad(invNum),brand:document.getElementById('invBrand').value,total:g,items:JSON.parse(JSON.stringify(items))});
+    renderStore();
+    document.getElementById('sentName').textContent='PDF generated · INV-'+pad(invNum)+'.pdf';
+    document.getElementById('invPrev').style.display='none'; document.getElementById('invSent').style.display='block';
+  }
+  function renderStore(){
+    if(!stored.length){ document.getElementById('invStore').innerHTML=''; return; }
+    var h='<p class="lab" style="margin-top:18px;"><i class="ti ti-archive"></i> Stored invoices (tap to view)</p><div class="card">';
+    stored.forEach(function(r,i){ h+='<div class="row" style="cursor:pointer;" onclick="viewStored('+i+')"><i class="ti ti-file-invoice" style="color:var(--red);"></i><span style="flex:1;">INV-'+r.no+' · '+r.brand+'</span><span style="font-weight:600;margin-right:8px;">RM '+r.total+'</span><i class="ti ti-eye" style="color:var(--mut);"></i></div>'; });
+    document.getElementById('invStore').innerHTML=h+'</div>';
+  }
+  function viewStored(i){
+    var r=stored[i], b=document.getElementById('pvBody'); b.innerHTML='';
+    r.items.forEach(function(it){ var t=Math.round(it.q*it.p); b.innerHTML+='<tr><td>'+it.d+'</td><td style="text-align:right;">'+it.q+'</td><td style="text-align:right;">'+it.p+'</td><td style="text-align:right;">'+t+'</td></tr>'; });
+    document.getElementById('pvBrand').textContent=r.brand;
+    document.getElementById('pvNo').textContent='#INV-'+r.no+' · 28 Jun 2026';
+    document.getElementById('pvTotal').textContent=r.total;
+    document.getElementById('invEdit').style.display='none'; document.getElementById('invSent').style.display='none'; document.getElementById('invPrev').style.display='block';
+    document.querySelector('.body').scrollTop=0;
+  }
+  function newInvoice(){
+    invNum++; items=defItems();
+    document.getElementById('invNo').textContent='#INV-'+pad(invNum);
+    document.getElementById('invBrand').value='';
+    drawLines();
+    document.getElementById('invSent').style.display='none'; document.getElementById('invPrev').style.display='none'; document.getElementById('invEdit').style.display='block';
+  }
+
+  items=defItems(); drawLines();
+
+  /* upload version history */
+  function uploadZip(){
+    var rows=[
+      {d:'24 Jun 2026',f:409,tag:'current'},
+      {d:'26 May 2026',f:399,tag:''},
+      {d:'25 Apr 2026',f:380,tag:''}
+    ];
+    var h='<p class="lab" style="margin-top:18px;"><i class="ti ti-history"></i> Import version history</p><div class="card">';
+    rows.forEach(function(r){ h+='<div class="row"><i class="ti ti-file-zip" style="color:var(--red);"></i><span style="flex:1;">Export '+r.d+' · '+r.f+' fans</span>'+(r.tag?'<span class="pill pg">current</span>':'<button class="btn sm" onclick="alert(\'Restore this snapshot\')"><i class="ti ti-history-toggle"></i> Restore</button>')+'</div>'; });
+    document.getElementById('importHist').innerHTML=h+'</div>';
+  }
+</script>
+</body>
+</html>
